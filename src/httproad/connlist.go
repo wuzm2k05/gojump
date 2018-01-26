@@ -1,9 +1,9 @@
 package httproad
 
 type connList struct{
-  id int
+  //id int
   closing bool  //peer closed
-  isUsed bool   //this connection id is free
+  isUsed bool   //this connection id is used 
   conn net.Conn //connection of tcp
 }
 
@@ -11,12 +11,13 @@ var httpsConnList [100]connList
 
 /*****************************************************
 get one connectionId from list
-
+[API] means it is visible outside of pacakge
 *****************************************************/
 func GetConnId() int{
   for i:=0; i<100; i++{
     if (!httpsConnList[i].isUsed){
       httpsConnList[i].isUsed = true
+      httpsConnList[i].closing = false
       return i
     }
   }
@@ -25,7 +26,7 @@ func GetConnId() int{
 
 /****************************************************
 free one connection Id
-
+[API]
 *****************************************************/
 func FreeConnId(id int){
   if id<100{

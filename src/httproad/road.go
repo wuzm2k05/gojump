@@ -11,12 +11,15 @@ goJump client send http post as there is new pacakge in queue, and get response 
 ***************************************************/
 
 type InnerMsg struct{
-  type int // type of msg, 0: NULL req; 1: https req; 2: http req
-  buf []byte  
+  // type of msg, 0: heartbeat req; 1: https req; 2: http req;
+  //              3: connection close;
+  type int 
+  int connId //connection ID if it is a https req
+  buf []byte  // mesg content
 }
 
-msgChan := make(chan InnnerMsg, 100)
-httpmsgChan := make(chan InnerMsg)
+msgChan := make(chan *InnnerMsg, 100)
+httpmsgChan := make(chan *InnerMsg)
 
 
 /*****************************************************************
@@ -35,12 +38,6 @@ func Addhttps(conn net.Conn, connId int){
   connItem = getConnEntry(connId).conn
   connItem.conn = conn
   go singleConn(connItem)
-}
-
-/*********************************************************************** 
-send one tcp pacaket to road. road would add it to queue and notify sender to send everthing in queue to goJump server 
-***********************************************************************/
-func sendpacket(){
 }
 
 /**********************************************************************
