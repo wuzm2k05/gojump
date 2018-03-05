@@ -10,16 +10,16 @@ goJump client send http post as there is new pacakge in queue, and get response 
 
 ***************************************************/
 
-type InnerMsg struct{
-  // type of msg, 0: heartbeat req; 1: https req; 2: http req;
+type innerMsg struct{
+  // type of msg, 0: heartbeat req; 1: https req; 2: http connect req;
   //              3: connection close;
   type int 
-  int connId //connection ID if it is a https req
+  connId int//connection ID if it is a https req
   buf []byte  // mesg content
 }
 
 msgChan := make(chan *InnnerMsg, 100)
-httpmsgChan := make(chan *InnerMsg)
+httpmsgChan := make(chan *innerMsg)
 
 
 /*****************************************************************
@@ -42,6 +42,8 @@ func Addhttps(conn net.Conn, connId int){
 
 /**********************************************************************
 send one http packet to road. road would add it to queue and notify sender to send everthing i queue to goJump server. and wait until post response which include this http request response comes back, then return response to this function caller  
+
+!!!NOT support http right now.
 **********************************************************************/
 func Sendhttp(r *http.Request){
   //serialize http request
@@ -49,4 +51,14 @@ func Sendhttp(r *http.Request){
   //wait response on httpmsgChan
 }
 
-
+/*************************************************************************
+send one http connect request to goJump server. wait until post response.
+encode the connectReq and send it through httpChan
+*************************************************************************/
+func SendConnectReq(r *http.Request,id int)(error){
+  msg := innerMsg{2,id}
+  msg.bug = []byte(r.Host)
+  httpmsgChan <- &msg
+  res := <- httpmsgChan
+  
+}

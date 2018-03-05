@@ -23,14 +23,13 @@ func handleOuterTunnel(w http.ResponseWriter, r *http.Request) {
     
     //send http Connect request to jumpserver, if jumpserver
     //return okay, then we can build real http road
-    resp, err := httproad.Sendhttp(r)
+    err := httproad.SendConnectReq(r)
     if err != nil {
       httproad.FreeConnId(id)
       http.Error(w, err.Error(), http.StatusServiceUnavailable)
       return
     }
     
-    defer resp.Body.Close()
     w.WriteHeader(http.StatusOK)
 
     //hijack the unerlying connection for https transport

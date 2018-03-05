@@ -49,7 +49,7 @@ func getConnEntry(id int) *connList{
 
 /**************************************************
 closing one connection. Peer already closed the connection.
-so need this site to close the connection too
+so need this side to close the connection too
 **************************************************/
 func closConn(id int){
  //may don't need this func 

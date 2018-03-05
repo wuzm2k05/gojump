@@ -19,7 +19,20 @@ func hb_loop(){
   for {
     select {
       case <- ticker.C:
-        //send a null request to road
+        sendNullMsg()
     }
   }
 }
+
+/************************************************************************
+send one packet which indicate the NULL request.
+*************************************************************************/
+func sendNullMsg(){
+  msg := innerMsg{0,0}
+  msgChan <- &msg
+end one packet which indicate the NULL request.
+*************************************************************************/
+func sendNullMsg(){
+}
+
+
