@@ -27,6 +27,8 @@ Des:
   then hijack the connection.
 **/
 func handleTunneling(w http.ResponseWriter, r *http.Request) {
+  
+  fmt.Println("get a Connect request from app\n")
 
   //create a tls connection with jump server
   conf := &tls.Config{

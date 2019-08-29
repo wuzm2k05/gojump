@@ -36,6 +36,8 @@ func main(){
 }
 
 func handleConn(conn net.Conn){
+
+  fmt.Println("one connection request recieved\n")
   //defer conn.Close()
   //expect magic connection here
   r := bufio.NewReader(conn)
@@ -55,11 +57,17 @@ func handleConn(conn net.Conn){
   }
 
   //now we get the right host, need to connect with destination and inform jumpclient
-  dest_conn, err := net.DialTimeout("tcp", msg[9:],10*time.Second)
+  fmt.Println("connecting to addr:"+msg[10:len(msg)-1])
+  dest_conn, err := net.DialTimeout("tcp", msg[10:len(msg)-1],10*time.Second)
   if err != nil {
+    fmt.Println(msg)
+    fmt.Println(len(msg))
+    fmt.Println("connect with host: " + msg[10:] +" fail!!")
     conn.Write([]byte("not support!\n"))
+    fmt.Println(err)
     return
   }
+  fmt.Println("send response to client")
   conn.Write([]byte("okay"))
 
   go transfer(dest_conn, conn)
