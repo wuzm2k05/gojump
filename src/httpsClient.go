@@ -7,18 +7,10 @@ import (
   "net/http"
   "log"
   "io"
+  "slog"
 )
 
-/**
-Des:
-  create a tls connection with jump server
-Return value:
-  net connection and error information
-**/
-func createTLSwithServer() {
-  //use local jump server for testing
-  
-}
+var logger *log.Logger
 
 /**
 Des:
@@ -28,7 +20,7 @@ Des:
 **/
 func handleTunneling(w http.ResponseWriter, r *http.Request) {
   
-  fmt.Println("get a Connect request from app\n")
+  logger.Println("get a Connect request from app\n")
 
   //create a tls connection with jump server
   conf := &tls.Config{
@@ -37,17 +29,18 @@ func handleTunneling(w http.ResponseWriter, r *http.Request) {
 
   server_conn, err := tls.Dial("tcp", "127.0.0.1:4444",conf)
   if err != nil {
-    fmt.Println("error estabish connection with server\n")
-    fmt.Println(err)
+    logger.Println("error estabish connection with server\n")
+    logger.Println(err)
     return
   }
 
   //send destination host:port to jump server,
   //so the jump server can connect with destination host:port
-  fmt.Println("connect to Host:"+r.Host)
   n, err := server_conn.Write([]byte("XAEFCTqyz "+r.Host+"\n"))  // magic number + host
   if err != nil {
-    fmt.Println("error write")
+    logger.Println("jumpClient: error write")
+    logger.Println(err)
+    server_conn.Close()
     return
   }
 
@@ -56,13 +49,15 @@ func handleTunneling(w http.ResponseWriter, r *http.Request) {
   buf := make([]byte,16)
   n, err = server_conn.Read(buf)
   if err != nil{
-    fmt.Println("error read")
+    logger.Println("jumpClient: error read")
+    logger.Println(err)
+    server_conn.Close()
     return
   }
-  fmt.Println("recieve from server:"+string(buf[:n]))
   if "okay" != string(buf[:n]){
-    fmt.Println("error return code from server:"+string(buf[:n]))
+    logger.Println("error return code from server:"+string(buf[:n]))
     w.WriteHeader(http.StatusForbidden)
+    server_conn.Close()
     return
   }
 
@@ -71,7 +66,8 @@ func handleTunneling(w http.ResponseWriter, r *http.Request) {
   //hijack client connection 
   hijacker, ok := w.(http.Hijacker) 
   if !ok {
-    fmt.Println("hijiack not support!\n")
+    logger.Println("hijiack not support!\n")
+    server_conn.Close()
     return
   }
   client_conn, _, _:= hijacker.Hijack()
@@ -90,6 +86,12 @@ func handleHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func main(){
+ 
+  slog.LoggerInit("jumpClient.log")
+  logger = slog.GetInstance()
+  logger.Println("jumpClient start")
+  logger.Println("jumpClient start")
+ 
   //start http proxy server for app connect
   server := &http.Server{
     Addr: ":8888",
@@ -105,20 +107,4 @@ func main(){
   }
   log.Fatal(server.ListenAndServe())
 
-/*
-  tr := &http.Transport{
-    TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-  }
-  client := &http.Client{Transport: tr}
-  resp, err := client.Get("https://127.0.0.1:9090")
-
-  if err != nil {
-    fmt.Println("error:", err)
-    return
-  }
-
-  defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
-  fmt.Println(string(body))
-*/
 }
