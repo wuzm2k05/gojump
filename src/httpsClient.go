@@ -8,9 +8,31 @@ import (
   "log"
   "io"
   "slog"
+  "encoding/json"
+  "os"
 )
 
+type ClientConf struct {
+  JumpClientListenAddr, JumpServerUrl string
+}
+
 var logger *log.Logger
+var clientConf *ClientConf
+
+func parseClientConf() {
+  file, err := os.Open("clientconf.json")
+  if err != nil {
+    panic("no clientconf.json file, need configurationfile!!")
+  }
+  
+  defer file.Close()
+  decoder := json.NewDecoder(file)
+  clientConf = &ClientConf{JumpClientListenAddr: ":8888" }
+  err = decoder.Decode(&clientConf)
+  if err != nil {
+    panic("decode clientconf file fail!!")
+  }
+}
 
 /**
 Des:
@@ -27,7 +49,7 @@ func handleTunneling(w http.ResponseWriter, r *http.Request) {
     InsecureSkipVerify: true,
   }
 
-  server_conn, err := tls.Dial("tcp", "127.0.0.1:4444",conf)
+  server_conn, err := tls.Dial("tcp", clientConf.JumpServerUrl,conf)
   if err != nil {
     logger.Println("error estabish connection with server\n")
     logger.Println(err)
@@ -90,11 +112,12 @@ func main(){
   slog.LoggerInit("jumpClient.log")
   logger = slog.GetInstance()
   logger.Println("jumpClient start")
-  logger.Println("jumpClient start")
+
+  parseClientConf()
  
   //start http proxy server for app connect
   server := &http.Server{
-    Addr: ":8888",
+    Addr: clientConf.JumpClientListenAddr,
     Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
       if r.Method == http.MethodConnect {
         handleTunneling(w, r)
@@ -105,6 +128,7 @@ func main(){
     // Disable HTTP/2.
     TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
   }
-  log.Fatal(server.ListenAndServe())
 
+  logger.Println("JumpClient listen on Addr:" + clientConf.JumpClientListenAddr)
+  log.Fatal(server.ListenAndServe())
 }

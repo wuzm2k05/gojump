@@ -11,15 +11,38 @@ import (
   "io"
   "slog"
   "log"
+  "os"
+  "encoding/json"
 )
 
+type ServerConf struct {
+  JumpServerListenAddr string
+}
+
 var logger *log.Logger
+var serverConf *ServerConf
+
+func parseServerConf() {
+  file, err := os.Open("serverconf.json")
+  if err != nil {
+    logger.Println("Warning, no serverconf.json found, will use default addr")
+  }
+
+  defer file.Close()
+  decoder := json.NewDecoder(file)
+  serverConf = &ServerConf{JumpServerListenAddr: ":4444" }
+  err = decoder.Decode(&serverConf)
+  if err != nil {
+    logger.Println("Warning, parse serverconf.json fail, will use default addr")
+  }
+}
 
 func main(){
   
-  slog.LoggerInit("jumpClient.log")
+  slog.LoggerInit("jumpServer.log")
   logger = slog.GetInstance()
   logger.Println("jumpClient start")
+  parseServerConf()
 
   cert,err := tls.LoadX509KeyPair("server.crt", "server.key")
   if err != nil {
@@ -28,11 +51,12 @@ func main(){
   }
 
   config := &tls.Config{Certificates: []tls.Certificate{cert}}
-  ln, err := tls.Listen("tcp", ":4444", config)
+  ln, err := tls.Listen("tcp", serverConf.JumpServerListenAddr, config)
   if err != nil {
     logger.Println("erro listen tls")
     return
   }
+  logger.Println("JumpServer listen on addr:" + serverConf.JumpServerListenAddr)
 
   for {
     conn, err := ln.Accept()
