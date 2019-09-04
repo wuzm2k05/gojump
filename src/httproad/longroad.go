@@ -1,103 +1,73 @@
 package httproad
 
 import (
-  "os"
-  "bufio"
-  "strings"
+	"bufio"
+	"net"
+	"net/http"
+	"os"
+	"sync"
 )
 
-/*******************************************************************
-this function would be the core func to send the packet to server
-*******************************************************************/
+var reqchan = make(chan *http.Request)
+var reschan = make(chan *http.Response)
+var once sync.Once
+var server_conn net.Conn
+var logger *log.Logger
 
-func longroad(){
-  //wait msg on msgChan and httpmsgChan
-  for {
-    select {
-    case msg := <-msgChan:
-      handleMsgFromJumpServer(sendMsgToJumpServer(msg))
-    case msg := <-httpmsgChan:
-      httpmsgChan <- sendMsgToJumpServer(msg)
-    }
-  }
+/*
+Client must call resp.Body.Close when finished reading resp.Body
+This function should be thread safe
+*/
+func SendHttpReq(url string, req *http.Request) *http.Response {
+	once.Do(func() {
+		go httpMsgRoadThread(url)
+		logger := slog.GetInstance()
+	})
+	reqchan <- req
+	return <-reschan
 }
 
-/****************************************************************
-send msg to jump server. 
-1> The msg will be encoded as post http req body.
-2> The http post req will be send to JumpServer.
-3> Then waiting for jumpServer to return the http post req response,
-4> Then return the response to caller.
-*****************************************************************/
-func sendMsgToJumpServer(msg innerMsg){
-
-  // get url from local setting file
-  url := ""
-  f,_ := os.Open("goJump.cfg")
-  if f != nil{
-    buf := bufio.NewReader(f)
-    line, err := buf.ReadString('\n')
-    if err != nil {
-      fmt.Printf("Error: Open config file goJump.cfg fail!")
-    }
-    url = strings.TrimSpace(line)
-  }
-  
-  //seriiza innerMsg
-  ser_inner := ""
-
-  //send the msg to jump server, and waiting for response
-  resp, err := http.Post(url, "application/x-www-form-urlencoded", ser_inner)
-  if err != nil {
-    fmt.Println(err)
-  }
-
-  return resp, err
+/*
+this thread run forever, read request from reqchan,
+then send the request to remote server,
+get response from remote server,
+return response to reschan.
+Why we need this thread? to serialize all http req
+*/
+func httpMsgRoadThread(url string) {
+	for {
+		req := <-reqchan
+		conn := getTlsConn(url)
+		req.Write(conn)
+		res, ok := http.ReadResponse(bufio.NewReader(conn), req)
+		if ok != nil {
+			logger.Println("error get Response")
+		} else {
+			logger.Println("get response correct")
+		}
+		reschan <- res
+	}
 }
 
-/*****************************************************************
-handle the http post req response from JumpServer.
-The response could include more than one msg. so need to parse all 
-of them.
-*****************************************************************/
-func handleMsgFromJumpServer(){
-}
+/*
+this should be an indpendent pacakge later.
+*/
+func getTlsConn(url string) net.Conn {
+	if server_conn != nil {
+		return server_conn
+	}
 
-/******************************************************************
-singleConn: this is the goroutine to recieve pacaket from application.
-******************************************************************/
-func singleConn(connItem *connList){
-  //wait data and send data
-  src := connItem.conn
-  buf := make([]byte,32*1024)
-  for {
-    nr, er := src.Read(buf)
-    if nr > 0{
-      sendPacket(buf[0:nr],connList.connId)
-    }
-    if er == EOF{
-      sendClosePacket(connList.connId)
-      break;
-    }
-    if er != nil {
-      sendClosePacket(connList.connId)
-      break;
-    } 
-  }
-}
+	var err error
 
-/***********************************************************************
-send one tcp pacaket to road. road would add it to queue and notify sender to send everthing in queue to goJump server
-***********************************************************************/
-func sendPacket(buf []byte, connId int) {
-  msg := innerMsg{1,connId,buf}
-  msgChan <- &msg
-}
+	conf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
 
-/*************************************************************************
-send one packet which indicate the connection is closed.
-**************************************************************************/
-func sendClosePacket(connId int){
-  msg := innerMsg{3,connId}
-  msgChan <- &msg
+	server_conn, err = tls.Dial("tcp", url, conf)
+	if err != nil {
+		logger.Println("error estabish connection with server\n")
+		logger.Println(err)
+		return nil
+	}
+	return server_conn
 }
