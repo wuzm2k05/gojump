@@ -1,15 +1,19 @@
 # gojump
 gojump jump from inner to outter
 
-use httpsClient.go and httpsServer.go for jump. other go files are not needed anymore
+use jumpClient.go and jumpServer.go for jump. other go files are not needed anymore
 
-httpsClient.go --compile--> JumpClient
-httpsServer.go --compile--> JumpServer
+jumpClient.go --compile--> JumpClient
+jumpServer.go --compile--> JumpServer
 
 Description:
   purpose of those two software is to jump Wall.
 
 Application (IE or others) <--> JumpClient (as http proxy) <----- Wall ---> JumpServer <------> destination
+
+prerequsite:
+  JumpServer: need deploy this server on a outter hostt, so it can connect outter servers directly.
+  JumpClient: jumpClinet need to connect with jumpServer directly.
 
 Configurations:
   JumpClient need clientconfig.json 

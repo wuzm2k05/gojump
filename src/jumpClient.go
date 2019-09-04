@@ -104,7 +104,7 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 }
 
 func handleHTTP(w http.ResponseWriter, req *http.Request) {
-  fmt.Fprintf(w, "Hi, NOT support!")
+  fmt.Fprintf(w, "Hi, http protocl is NOT support, you may want use https instead!")
 }
 
 func main(){
