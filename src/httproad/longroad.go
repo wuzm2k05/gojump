@@ -2,9 +2,12 @@ package httproad
 
 import (
 	"bufio"
+	"crypto/tls"
 	"net"
 	"net/http"
-	"os"
+	//"os"
+	"log"
+	"slog"
 	"sync"
 )
 
@@ -20,8 +23,8 @@ This function should be thread safe
 */
 func SendHttpReq(url string, req *http.Request) *http.Response {
 	once.Do(func() {
+		logger = slog.GetInstance()
 		go httpMsgRoadThread(url)
-		logger := slog.GetInstance()
 	})
 	reqchan <- req
 	return <-reschan
@@ -69,5 +72,18 @@ func getTlsConn(url string) net.Conn {
 		logger.Println(err)
 		return nil
 	}
+
+	// so send the magic number to server, then server can identify
+	// this is a connection for http not https
+	n, err := server_conn.Write([]byte("YAEFCTqyz")) // magic number for http connection
+	if err != nil {
+		logger.Println("jumpClient: error write")
+		logger.Println(err)
+		server_conn.Close()
+		return nil
+	}
+
+	//do we need response from server, may not now
+
 	return server_conn
 }
