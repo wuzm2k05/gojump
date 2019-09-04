@@ -75,7 +75,7 @@ func getTlsConn(url string) net.Conn {
 
 	// so send the magic number to server, then server can identify
 	// this is a connection for http not https
-	n, err := server_conn.Write([]byte("YAEFCTqyz")) // magic number for http connection
+	_, err = server_conn.Write([]byte("YAEFCTqyz")) // magic number for http connection
 	if err != nil {
 		logger.Println("jumpClient: error write")
 		logger.Println(err)

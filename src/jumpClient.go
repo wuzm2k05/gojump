@@ -105,7 +105,9 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 }
 
 func handleHTTP(w http.ResponseWriter, req *http.Request) {
-	httproad.SendHttpReq(clientConf.JumpServerUrl, req).Write(w)
+	res := httproad.SendHttpReq(clientConf.JumpServerUrl, req)
+	res.Write(w)
+	res.Body.Close()
 	//fmt.Fprintf(w, "Hi, http protocl is NOT support, you may want use https instead!")
 }
 

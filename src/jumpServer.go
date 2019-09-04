@@ -139,5 +139,6 @@ func handleHttpConn(conn net.Conn) {
 			return
 		}
 		res.Write(conn)
+		res.Body.Close()
 	}
 }
