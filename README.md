@@ -1,7 +1,7 @@
 # gojump
 gojump jump from inner to outter
 
-use jumpClient.go and jumpServer.go for jump. other go files are not needed anymore
+use jumpClient.go and jumpServer.go for jump.
 
 jumpClient.go --compile--> JumpClient
 jumpServer.go --compile--> JumpServer
