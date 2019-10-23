@@ -5,7 +5,7 @@ import (
 	//  "io/ioutil"
 	"encoding/json"
 	"fmt"
-	"httproad"
+	//"httproad"
 	"io"
 	"log"
 	"net/http"
@@ -106,10 +106,10 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 
 func handleHTTP(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, "Hi, http protocl is NOT support, you may want use https instead!")
-	defer res.Body.Close()
 	return // not support HTTP now	
-	res := httproad.SendHttpReq(clientConf.JumpServerUrl, req)
-	res.Write(w)
+	//defer res.Body.Close()
+	//res := httproad.SendHttpReq(clientConf.JumpServerUrl, req)
+	//res.Write(w)
 	//res.Body.Close()
 	//fmt.Fprintf(w, "Hi, http protocl is NOT support, you may want use https instead!")
 }
