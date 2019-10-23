@@ -31,11 +31,18 @@ func parseServerConf() {
 
 	defer file.Close()
 	decoder := json.NewDecoder(file)
+  //need ':' for tls server listen
 	serverConf = &ServerConf{JumpServerListenAddr: ":4444"}
 	err = decoder.Decode(&serverConf)
 	if err != nil {
 		logger.Println("Warning, parse serverconf.json fail, will use default addr")
 	}
+
+  //use enviroment if there is an port
+  serverPort, exists := os.LookupEnv("GO_JUMP_SERVER_PORT")
+  if exists {
+    serverConf.JumpServerListenAddr = serverPort
+  }
 }
 
 func main() {

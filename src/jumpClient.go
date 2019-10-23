@@ -111,7 +111,6 @@ func handleHTTP(w http.ResponseWriter, req *http.Request) {
 	//res := httproad.SendHttpReq(clientConf.JumpServerUrl, req)
 	//res.Write(w)
 	//res.Body.Close()
-	//fmt.Fprintf(w, "Hi, http protocl is NOT support, you may want use https instead!")
 }
 
 func main() {
