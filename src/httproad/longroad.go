@@ -20,6 +20,8 @@ var logger *log.Logger
 /*
 Client must call resp.Body.Close when finished reading resp.Body
 This function should be thread safe
+This function send the msg through channel req/res whose length is 1,
+to serialize all req/res.
 */
 func SendHttpReq(url string, req *http.Request) *http.Response {
 	once.Do(func() {
