@@ -14,6 +14,7 @@ import (
 	"os"
 	"slog"
 	"time"
+	"context"
 )
 
 type ServerConf struct {
@@ -78,7 +79,7 @@ func main() {
 
 func handleConn(conn net.Conn) {
 
-	logger.Println("one connection request recieved\n")
+	logger.Println("one http connection request recieved\n")
 	//defer conn.Close()
 	//expect magic connection here
 	r := bufio.NewReader(conn)
@@ -137,6 +138,32 @@ func formClientReq(ireq *http.Request) *http.Request {
 }
 
 /*
+send http request and get the response.
+NOTE, the input request is incoming server request, and we must use outgoing client request for real http request.
+if we got error, then we need to form one 404 error response (TODO)
+*/
+func doHttpCall(ireq *http.Request) *http.Response {
+  //generate outgoing client request context
+  d := time.Now().Add(5000 * time.Millisecond)
+  ctx, cancel := context.WithDeadline(context.Background(),d)
+  defer cancel()
+
+  req := ireq.Clone(ctx)
+  req.RequestURI = ""
+  req.URL.Scheme = "http"
+  req.URL.Host = req.Host
+  client := &http.Client{}
+  res, err := client.Do(req)
+  if err != nil {
+    logger.Println("send request to client fail")
+    logger.Println(err)
+    return nil
+  }
+
+  return res
+}
+
+/*
 Des: this is a connection for http request.
 */
 func handleHttpConn(conn net.Conn) {
@@ -150,13 +177,8 @@ func handleHttpConn(conn net.Conn) {
 		}
 		logger.Println("recieve one http request:")
 		logger.Println(req)
-		client := &http.Client{}
-		res, err := client.Do(req)
-		if err != nil {
-			logger.Println("send request to client fail")
-			logger.Println(err)
-			return
-		}
+		res := doHttpCall(req)
+		logger.Println(res)
 		res.Write(conn)
 		res.Body.Close()
 	}

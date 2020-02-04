@@ -30,7 +30,9 @@ func SendHttpReq(url string, req *http.Request) *http.Response {
 		go httpMsgRoadThread(url)
 	})
 	reqchan <- req
-	return <-reschan
+	res := <- reschan
+	logger.Println("get response from thread")
+	return res
 }
 
 /*

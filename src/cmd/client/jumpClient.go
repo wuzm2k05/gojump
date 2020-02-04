@@ -110,8 +110,14 @@ func handleHTTP(w http.ResponseWriter, req *http.Request) {
 	//defer res.Body.Close()
 	res := httproad.SendHttpReq(clientConf.JumpServerUrl, req)
         defer res.Body.Close()
-	res.Write(w)
-	res.Body.Close()
+	logger.Println("get res okay: ")
+	logger.Println(res)
+	err := res.Write(w)
+    	if err != nil {
+		logger.Println(err)
+	}
+        
+	//res.Body.Close()
 }
 
 func main() {
