@@ -9,6 +9,7 @@ import (
 	"log"
 	"slog"
 	"sync"
+	//"time"
 )
 
 var reqchan = make(chan *http.Request)
@@ -43,6 +44,8 @@ func httpMsgRoadThread(url string) {
 	for {
 		req := <-reqchan
 		conn := getTlsConn(url)
+		logger.Println("handle http req after creating tls connection:")
+		logger.Println(req)
 		req.Write(conn)
 		res, ok := http.ReadResponse(bufio.NewReader(conn), req)
 		if ok != nil {
@@ -77,7 +80,7 @@ func getTlsConn(url string) net.Conn {
 
 	// so send the magic number to server, then server can identify
 	// this is a connection for http not https
-	_, err = server_conn.Write([]byte("YAEFCTqyz")) // magic number for http connection
+	_, err = server_conn.Write([]byte("YAEFCTqyz"+"\n")) // magic number for http connection
 	if err != nil {
 		logger.Println("jumpClient: error write")
 		logger.Println(err)

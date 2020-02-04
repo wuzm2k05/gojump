@@ -1,0 +1,5 @@
+2020/02/04 10:12:49 /root/go/gojumpHttpRoad/src/cmd/client/jumpClient.go:120: jumpClient start
+2020/02/04 10:12:49 /root/go/gojumpHttpRoad/src/cmd/client/jumpClient.go:138: JumpClient listen on Addr::8889
+2020/02/04 10:19:16 /root/go/gojumpHttpRoad/src/httproad/longroad.go:47: handle http req after creating tls connection:
+2020/02/04 10:19:16 /root/go/gojumpHttpRoad/src/httproad/longroad.go:48: &{GET http://192.168.1.1/ HTTP/1.1 1 1 map[Accept:[*/*] Proxy-Connection:[Keep-Alive] User-Agent:[curl/7.29.0]] {} <nil> 0 [] false 192.168.1.1 map[] map[] <nil> map[] 127.0.0.1:40362 http://192.168.1.1/ <nil> <nil> <nil> 0xc00005c400}
+2020/02/04 10:30:36 /root/go/gojumpHttpRoad/src/httproad/longroad.go:52: error get Response

@@ -1,0 +1,4 @@
+{
+  "jumpServerUrl": "127.0.0.1:9999",
+  "jumpClientListenAddr": ":8889"
+}

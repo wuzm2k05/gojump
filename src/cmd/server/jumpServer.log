@@ -1,0 +1,7 @@
+2020/02/04 10:18:07 /root/go/gojumpHttpRoad/src/cmd/server/jumpServer.go:52: jumpClient start
+2020/02/04 10:18:07 /root/go/gojumpHttpRoad/src/cmd/server/jumpServer.go:67: JumpServer listen on addr::9999
+2020/02/04 10:19:06 /root/go/gojumpHttpRoad/src/cmd/server/jumpServer.go:81: one connection request recieved
+
+2020/02/04 10:19:06 /root/go/gojumpHttpRoad/src/cmd/server/jumpServer.go:134: an HTTP connection thread
+2020/02/04 10:19:16 /root/go/gojumpHttpRoad/src/cmd/server/jumpServer.go:142: recieve one http request:
+2020/02/04 10:19:16 /root/go/gojumpHttpRoad/src/cmd/server/jumpServer.go:143: &{GET / HTTP/1.1 1 1 map[Accept:[*/*] Proxy-Connection:[Keep-Alive] User-Agent:[curl/7.29.0]] {} <nil> 0 [] false 192.168.1.1 map[] map[] <nil> map[]  / <nil> <nil> <nil> <nil>}

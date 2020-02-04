@@ -131,13 +131,16 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 Des: this is a connection for http request.
 */
 func handleHttpConn(conn net.Conn) {
+	logger.Println("an HTTP connection thread")
 	for {
 		req, err := http.ReadRequest(bufio.NewReader(conn))
 		if err != nil {
-			logger.Println("recieve request fail")
+			logger.Println("recieve http request fail")
 			logger.Println(err)
 			return
 		}
+		logger.Println("recieve one http request:")
+		logger.Println(req)
 		client := &http.Client{}
 		res, err := client.Do(req)
 		if err != nil {
