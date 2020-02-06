@@ -2,7 +2,7 @@ package httproad
 
 import (
 	"bufio"
-	"crypto/tls"
+	//"crypto/tls"
 	"net"
 	"net/http"
 	//"os"
@@ -69,11 +69,15 @@ func getTlsConn(url string) net.Conn {
 
 	var err error
 
+	/*
 	conf := &tls.Config{
 		InsecureSkipVerify: true,
 	}
 
 	server_conn, err = tls.Dial("tcp", url, conf)
+	*/
+
+	server_conn, err = net.Dial("tcp", url)
 	if err != nil {
 		logger.Println("error estabish connection with server\n")
 		logger.Println(err)

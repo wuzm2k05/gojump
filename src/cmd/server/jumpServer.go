@@ -2,10 +2,9 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
+	//"crypto/tls"
 	//  "log"
 	"net"
-	//  "net/http"
 	//  "fmt"
 	"encoding/json"
 	"io"
@@ -14,7 +13,8 @@ import (
 	"os"
 	"slog"
 	"time"
-	"context"
+	//"io/ioutil"
+	//"context"
 )
 
 type ServerConf struct {
@@ -53,6 +53,7 @@ func main() {
 	logger.Println("jumpClient start")
 	parseServerConf()
 
+	/*
 	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
 	if err != nil {
 		logger.Println("error tls")
@@ -61,6 +62,9 @@ func main() {
 
 	config := &tls.Config{Certificates: []tls.Certificate{cert}}
 	ln, err := tls.Listen("tcp", serverConf.JumpServerListenAddr, config)
+	*/
+
+	ln, err := net.Listen("tcp", serverConf.JumpServerListenAddr)
 	if err != nil {
 		logger.Println("erro listen tls")
 		return
@@ -128,14 +132,6 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 	io.Copy(destination, source)
 }
 
-/*
-Des transfer server side http request to client side http request
-Since an incoming server http request is different with outgoing http client http request
-*/
-func formClientReq(ireq *http.Request) *http.Request {
-  ireq.RequestURI = ""
-  return ireq
-}
 
 /*
 send http request and get the response.
@@ -144,8 +140,8 @@ if we got error, then we need to form one 404 error response (TODO)
 */
 func doHttpCall(ireq *http.Request) *http.Response {
   //generate outgoing client request context
-  d := time.Now().Add(5000 * time.Millisecond)
-  ctx, cancel := context.WithDeadline(context.Background(),d)
+  /*
+  ctx, cancel := context.WithTimeout(context.Background(),50000*time.Millisecond)
   defer cancel()
 
   req := ireq.Clone(ctx)
@@ -159,10 +155,41 @@ func doHttpCall(ireq *http.Request) *http.Response {
     logger.Println(err)
     return nil
   }
+  */
+  
+  ireq.URL.Scheme = "http"
+  ireq.URL.Host = ireq.Host
+  req, err := http.NewRequest(ireq.Method, ireq.URL.String(),nil)
+  if err != nil {
+    logger.Println("make new request errror")
+    logger.Println(err)
+  }
+  client := &http.Client{}
+  res, err := client.Do(req)
+  if err != nil {
+	logger.Println("get response from remote error")
+	logger.Println(err)
+  }
 
   return res
 }
 
+func doResponse(ires *http.Response, w io.Writer) error {
+  res := http.Response{
+    Body: ires.Body,
+  }
+  res.Status = ires.Status
+  res.StatusCode = ires.StatusCode
+  res.Proto = ires.Proto
+  res.ProtoMajor = ires.ProtoMajor
+  res.ProtoMinor = ires.ProtoMinor
+  res.Header = ires.Header
+  res.ContentLength = ires.ContentLength
+  res.TransferEncoding = ires.TransferEncoding
+   res.Uncompressed = ires.Uncompressed
+  res.Write(w)
+  return nil
+}
 /*
 Des: this is a connection for http request.
 */
@@ -179,7 +206,8 @@ func handleHttpConn(conn net.Conn) {
 		logger.Println(req)
 		res := doHttpCall(req)
 		logger.Println(res)
-		res.Write(conn)
+		//res.Write(conn)
+		doResponse(res,conn)
 		res.Body.Close()
 	}
 }
