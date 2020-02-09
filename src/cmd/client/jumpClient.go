@@ -2,7 +2,7 @@ package main
 
 import (
 	"crypto/tls"
-	"io/ioutil"
+	//"io/ioutil"
 	"encoding/json"
 	"fmt"
 	"httproad"
@@ -11,7 +11,8 @@ import (
 	"net/http"
 	"os"
 	"slog"
-	"time"
+	"strings"
+	//"time"
 )
 
 type ClientConf struct {
@@ -105,48 +106,64 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 	io.Copy(destination, source)
 }
 
+/*
+is the buffer have end of html </html>
+we only support text/html content type now
+*/
+func isBodyDone(buf []byte) bool{
+  length := len(buf)
+  if length > 100 {
+    if strings.Contains(string(buf[length-100:]),"</html>") {
+      return true
+    } else {
+      return false
+    }
+  } else {
+    if strings.Contains(string(buf),"</html>"){
+      return true
+    }else{
+      return false
+    }
+  }
+}
+
 func handleHTTP(w http.ResponseWriter, req *http.Request) {
 	//fmt.Fprintf(w, "Hi, http protocl is NOT support, you may want use https instead!")
 	//return // not support HTTP now	
 	//defer res.Body.Close()
-	res := httproad.SendHttpReq(clientConf.JumpServerUrl, req)
+	res,msgId := httproad.SendHttpReq(clientConf.JumpServerUrl, req)
 
-	//test!!!
-	//res.Body.Read only read the current arrived content. However, some body content has not arrived yet!!
-	//even the response is got, that only means the header of response arrived, but not all body!!
-	time.Sleep(1*time.Second)
-	var buf [40960]byte
-	n, err := res.Body.Read(buf[:])
-	if err != nil {
-		logger.Println("read body error!")
-		logger.Println(err)
-	}
-	logger.Println("read length ")
-	logger.Println(n)
-	bodySS := string(buf[:])
-	logger.Println(bodySS)
-	fmt.Fprintf(w,bodySS)
-	return
-        
-	//we only send body back
-        defer res.Body.Close()
-	logger.Println("get res okay: ")
-	logger.Println(res)
 
-	//get the body
-	if res.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			logger.Println(err)
-		}
-		bodyS := string(bodyBytes)
-		logger.Println("res body:")
-		logger.Println(bodyS)
-		fmt.Fprintf(w,bodyS)
-	}else {
+	if res.StatusCode != http.StatusOK {
+		httproad.RecResBodyDone(msgId)
 		logger.Println("http response is not OK")
 		fmt.Fprintf(w,"error happen: statuscode: "+string(res.StatusCode))
 	}
+
+	//res.Body.Read only read the current arrived content. However, some body content has not arrived yet!!
+	//even the response is got, that only means the header of response arrived, but not all body!!
+	idx := 0
+	var buf [4194304]byte
+	for {
+		n, err := res.Body.Read(buf[idx:])
+		if err != nil {
+			logger.Println("read body error!")
+			logger.Println(err)
+		}
+		idx += n
+		if isBodyDone(buf[:idx]){
+			break
+		}
+		logger.Println("read length: ")
+		logger.Println(n)
+	}
+	
+        //notify http road the body is done
+        httproad.RecResBodyDone(msgId)
+	//bodySS := string(buf[:])
+	fmt.Fprintf(w,string(buf[:idx]))
+
+	return
 }
 
 func main() {

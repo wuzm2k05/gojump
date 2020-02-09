@@ -13,7 +13,8 @@ import (
 	"os"
 	"slog"
 	"time"
-	//"io/ioutil"
+	"io/ioutil"
+	"strings"
 	//"context"
 )
 
@@ -50,7 +51,7 @@ func main() {
 
 	slog.LoggerInit("jumpServer.log")
 	logger = slog.GetInstance()
-	logger.Println("jumpClient start")
+	logger.Println("jumpServer start")
 	parseServerConf()
 
 	/*
@@ -140,23 +141,6 @@ if we got error, then we need to form one 404 error response (TODO)
 */
 func doHttpCall(ireq *http.Request) *http.Response {
   //generate outgoing client request context
-  /*
-  ctx, cancel := context.WithTimeout(context.Background(),50000*time.Millisecond)
-  defer cancel()
-
-  req := ireq.Clone(ctx)
-  req.RequestURI = ""
-  req.URL.Scheme = "http"
-  req.URL.Host = req.Host
-  client := &http.Client{}
-  res, err := client.Do(req)
-  if err != nil {
-    logger.Println("send request to client fail")
-    logger.Println(err)
-    return nil
-  }
-  */
-  
   ireq.URL.Scheme = "http"
   ireq.URL.Host = ireq.Host
   req, err := http.NewRequest(ireq.Method, ireq.URL.String(),nil)
@@ -164,30 +148,39 @@ func doHttpCall(ireq *http.Request) *http.Response {
     logger.Println("make new request errror")
     logger.Println(err)
   }
-  client := &http.Client{}
+  client := &http.Client{Timeout: 5 * time.Second}
   res, err := client.Do(req)
   if err != nil {
 	logger.Println("get response from remote error")
 	logger.Println(err)
   }
 
+
   return res
 }
 
 func doResponse(ires *http.Response, w io.Writer) error {
-  res := http.Response{
-    Body: ires.Body,
+  contentType := ires.Header.Get("Content-Type")
+  if !strings.Contains(contentType,"text/html") {
+	  resB := ioutil.NopCloser(strings.NewReader("What's wrong with you! Are you trying to get a website which doesn't support text/html?? That's your problem! I as a proxy don't support that! ContentType is: "+contentType))
+
+	  res := http.Response{
+	    Body: resB,
+	  }
+	  res.Status = ires.Status
+	  res.StatusCode = ires.StatusCode
+	  res.Proto = ires.Proto
+	  res.ProtoMajor = ires.ProtoMajor
+	  res.ProtoMinor = ires.ProtoMinor
+	  res.Header = ires.Header
+	  res.ContentLength = ires.ContentLength
+	  res.TransferEncoding = ires.TransferEncoding
+	  res.Uncompressed = ires.Uncompressed
+	  res.Write(w)
+  }else{
+    ires.Write(w)
   }
-  res.Status = ires.Status
-  res.StatusCode = ires.StatusCode
-  res.Proto = ires.Proto
-  res.ProtoMajor = ires.ProtoMajor
-  res.ProtoMinor = ires.ProtoMinor
-  res.Header = ires.Header
-  res.ContentLength = ires.ContentLength
-  res.TransferEncoding = ires.TransferEncoding
-   res.Uncompressed = ires.Uncompressed
-  res.Write(w)
+
   return nil
 }
 /*

@@ -9,7 +9,7 @@ import (
 	"log"
 	"slog"
 	"sync"
-	//"time"
+	"time"
 )
 
 var reqchan = make(chan *http.Request)
@@ -17,6 +17,11 @@ var reschan = make(chan *http.Response)
 var once sync.Once
 var server_conn net.Conn
 var logger *log.Logger
+var startTimeoutChan = make(chan bool)
+var timeoutChan = make(chan uint)
+var bodyDoneChan = make(chan uint, 4) //2 should be okay, but we use 4 anyway
+var msgId uint  //intitliazed to zero
+
 
 /*
 Client must call resp.Body.Close when finished reading resp.Body
@@ -24,16 +29,58 @@ This function should be thread safe
 This function send the msg through channel req/res whose length is 1,
 to serialize all req/res.
 */
-func SendHttpReq(url string, req *http.Request) *http.Response {
+func SendHttpReq(url string, req *http.Request) (*http.Response,uint) {
 	once.Do(func() {
 		logger = slog.GetInstance()
 		go httpMsgRoadThread(url)
+		go timeoutThread()
 	})
 	reqchan <- req
 	res := <- reschan
 	logger.Println("get response from thread")
-	return res
+	return res, msgId
 }
+
+/*
+client must call RecResBodyDone after it think the content in the body is transfered complete. 
+Otherwise httpRoad will close the connection with jumpServer to make sure client readBody will return
+after timeout.
+*/
+func RecResBodyDone(msgId uint){
+ bodyDoneChan <- msgId
+}
+
+/*
+this go routine run forever, to close connection if timeout
+*/
+func timeoutThread(){
+  for {
+    <- startTimeoutChan
+    go func(id uint){
+      time.Sleep(10 * time.Second)
+      timeoutChan <- id
+    }(msgId)
+    for {
+	 
+	    select {
+	      case expireId := <-timeoutChan:
+		if expireId == msgId {
+		  //the timer expired, so need to close the connection
+		  server_conn.Close()
+		  server_conn = nil
+		  break
+		}
+	      case id := <-bodyDoneChan:
+		if id == msgId {
+		  //the body is been recived correctly, then do nothing
+		  break
+                }
+	    }
+    }
+    
+    msgId++
+  }
+} 
 
 /*
 this thread run forever, read request from reqchan,
@@ -49,6 +96,7 @@ func httpMsgRoadThread(url string) {
 		logger.Println("handle http req after creating tls connection:")
 		logger.Println(req)
 		req.Write(conn)
+		startTimeoutChan <- true
 		res, ok := http.ReadResponse(bufio.NewReader(conn), req)
 		if ok != nil {
 			logger.Println("error get Response")
@@ -56,6 +104,11 @@ func httpMsgRoadThread(url string) {
 			logger.Println("get response correct")
 		}
 		reschan <- res
+		//test!!!
+		go func (){
+			time.Sleep(10*time.Second)
+			conn.Close()
+		}()
 	}
 }
 
