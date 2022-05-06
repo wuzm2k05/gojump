@@ -5,8 +5,8 @@ gojump jump from inner to outter
 
 use jumpClient.go and jumpServer.go for jump.
 
-jumpClient.go --compile--> JumpClient
-jumpServer.go --compile--> JumpServer
+jumpClient.go --compile--> JumpClient  
+jumpServer.go --compile--> JumpServer  
 
 Description:   
   purpose of those two software is to jump Wall.
